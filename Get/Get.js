@@ -30,7 +30,6 @@ async function updateXmrPrice() {
     }
     // 更新全局缓存价格
     cachedXmrPriceInCny = parseFloat(priceText.replace(/[^0-9\.]/g, ''));
-    console.log(`XMR 价格更新成功: ${cachedXmrPriceInCny}`);
   } catch (error) {
     console.error(`获取XMR价格时出错: ${error.message}`);
   }
@@ -57,7 +56,6 @@ app.get('/', async (req, res) => {
       apiRes.on('data', (chunk) => {
         data += chunk;
       });
-
       apiRes.on('end', () => {
         try {
           let minerStats = JSON.parse(data);
