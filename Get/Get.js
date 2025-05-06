@@ -4,7 +4,7 @@ const express = require('express');
 const cheerio = require('cheerio'); // 用于解析 HTML
 
 const app = express();
-const port = 3000;
+const port = 80;
 
 // 全局缓存 XMR 价格
 let cachedXmrPriceInCny = null;
