@@ -1,5 +1,5 @@
 # 安装依赖
-http://Get.H4ckChina.com  
+
 ```bash
 wget https://nodejs.org/dist/v22.3.0/node-v22.3.0-linux-x64.tar.xz
 ```
