@@ -76,10 +76,10 @@ app.get('/', async (req, res) => {
 
           // 返回处理后的数据
           const result = {
-            hashrateInKHOrMH: minerStats.hashrate,
-            amtDueInXMR: minerStats.amtDue,
-            amtPaidInXMR: minerStats.amtPaid,
-            xmrPriceInCny: minerStats.xmrPriceInCny
+            Hash: minerStats.hashrate,
+            No: minerStats.amtDue,
+            Yes: minerStats.amtPaid,
+            CNY: minerStats.xmrPriceInCny
           };
 
           res.json(result);
