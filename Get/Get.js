@@ -4,7 +4,7 @@ const express = require('express');
 const cheerio = require('cheerio'); // 用于解析 HTML
 
 const app = express();
-const port = 80;
+const port = 80; // 监听80端口，请注意权限问题
 
 // 全局缓存 XMR 价格
 let cachedXmrPriceInCny = null;
@@ -74,12 +74,12 @@ app.get('/', async (req, res) => {
           // 加入当前 XMR 的价格（单位：CNY），保留两位小数
           minerStats.xmrPriceInCny = cachedXmrPriceInCny.toFixed(2);
 
-          // 返回处理后的数据
+          // 修改返回的键名：hasrateInKHOrMH -> Hash, amtDueInXMR -> No, amtPaidInXMR -> Yes, xmrPriceInCny -> CNY
           const result = {
-            Hash: minerStats.hashrate,
-            No: minerStats.amtDue,
-            Yes: minerStats.amtPaid,
-            CNY: minerStats.xmrPriceInCny
+            "Hash": minerStats.hashrate,
+            "No": minerStats.amtDue,
+            "Yes": minerStats.amtPaid,
+            "CNY": minerStats.xmrPriceInCny
           };
 
           res.json(result);
