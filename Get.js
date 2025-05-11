@@ -49,7 +49,7 @@ app.get('/', async (req, res) => {
     }
 
     // 使用 SupportXMR API 获取矿工统计数据
-    const walletAddress = '43GwHc4GFav8wNS9UPFJfbCoyVMo6g6DLdjpBj6hboND58BxHm24T9nJvegPxsd7YXJAFF63h8PJzLnsCw3oJJ6yRtN91Yj';
+    const walletAddress = '43bd5HdfHagCC4uEtE9va22M22RbT6PgFfeFEyGhw6PTTY5xMjxFsS7K2s64vceXK76nvtaQuxZ128iL6vSEK1vkLyYptuD';
 
     https.get(`https://supportxmr.com/api/miner/${walletAddress}/stats`, (apiRes) => {
       let data = '';
