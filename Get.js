@@ -1,103 +1,50 @@
-const https = require('https');
+const http = require('http');
 const axios = require('axios');
-const express = require('express');
-const cheerio = require('cheerio'); // 用于解析 HTML
+const cheerio = require('cheerio');
 
-const app = express();
-const port = 80; // 监听80端口，请注意权限问题
-
-// 全局缓存 XMR 价格
-let cachedXmrPriceInCny = null;
-
-// 定义函数用于更新 XMR 价格
-async function updateXmrPrice() {
-  try {
-    const financeResponse = await axios.get(
-      'https://www.google.com/finance/quote/XMR-CNY?sa=X&ved=2ahUKEwiQ2eD4wYCNAxWfc_UHHVxtCjEQ-fUHegQIARAc',
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          'Accept': 'text/html,application/xhtml+xml,application/xml'
-        }
-      }
-    );
-    // 使用 cheerio 解析 HTML 并提取价格
-    const $ = cheerio.load(financeResponse.data);
-    let priceText = $('.YMlKec.fxKbKc').first().text();
-    if (!priceText) {
-      console.error('无法获取XMR的最新价格');
-      return;
+// 获取 XMR 价格的函数
+async function getXMRPrice() {
+    try {
+        const url = 'https://www.google.com/finance/quote/XMR-CNY';
+        const response = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+        
+        const $ = cheerio.load(response.data);
+        // Google Finance 的价格通常在 class="YMlKec fxKbKc" 的元素中
+        const priceText = $('.YMlKec.fxKbKc').first().text();
+        const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
+        
+        // 取整数部分
+        return Math.floor(price);
+    } catch (error) {
+        console.error('获取价格失败:', error.message);
+        return null;
     }
-    // 更新全局缓存价格
-    cachedXmrPriceInCny = parseFloat(priceText.replace(/[^0-9\.]/g, ''));
-  } catch (error) {
-    console.error(`获取XMR价格时出错: ${error.message}`);
-  }
 }
 
-// 初始调用一次
-updateXmrPrice();
-
-// 每隔10分钟更新一次 XMR 价格
-setInterval(updateXmrPrice, 10 * 60 * 1000);
-
-app.get('/', async (req, res) => {
-  try {
-    // 如果还未获取到价格数据，则返回错误
-    if (cachedXmrPriceInCny === null) {
-      return res.status(500).send('XMR 价格数据尚未更新，请稍后再试');
-    }
-
-    // 使用 SupportXMR API 获取矿工统计数据
-    const walletAddress = '43bd5HdfHagCC4uEtE9va22M22RbT6PgFfeFEyGhw6PTTY5xMjxFsS7K2s64vceXK76nvtaQuxZ128iL6vSEK1vkLyYptuD';
-
-    https.get(`https://supportxmr.com/api/miner/${walletAddress}/stats`, (apiRes) => {
-      let data = '';
-      apiRes.on('data', (chunk) => {
-        data += chunk;
-      });
-      apiRes.on('end', () => {
-        try {
-          let minerStats = JSON.parse(data);
-
-          // 根据当前算力自动选择显示单位：KH/s 或 MH/s
-          if (minerStats.hash < 1000000) {
-            minerStats.hashrate = (minerStats.hash / 1000).toFixed(2) + ' KH/s';
-          } else {
-            minerStats.hashrate = (minerStats.hash / 1000000).toFixed(2) + ' MH/s';
-          }
-
-          // 转换未付金额和已付金额，保留三位小数
-          minerStats.amtDue = (minerStats.amtDue / Math.pow(10, 12)).toFixed(3);
-          minerStats.amtPaid = (minerStats.amtPaid / Math.pow(10, 12)).toFixed(3);
-
-          // 加入当前 XMR 的价格（单位：CNY），保留两位小数
-          minerStats.xmrPriceInCny = cachedXmrPriceInCny.toFixed(2);
-
-          // 修改返回的键名：hasrateInKHOrMH -> Hash, amtDueInXMR -> No, amtPaidInXMR -> Yes, xmrPriceInCny -> CNY
-          const result = {
-            "Hash": minerStats.hashrate,
-            "No": minerStats.amtDue,
-            "Yes": minerStats.amtPaid,
-            "CNY": minerStats.xmrPriceInCny
-          };
-
-          res.json(result);
-        } catch (err) {
-          console.error(`解析矿工统计数据错误: ${err.message}`);
-          res.status(500).send("解析矿工数据时出错");
+// 创建 HTTP 服务器
+const server = http.createServer(async (req, res) => {
+    if (req.url === '/') {
+        const price = await getXMRPrice();
+        
+        if (price !== null) {
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end(`XMR:${price}`);
+        } else {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('无法获取XMR价格');
         }
-      });
-    }).on('error', (err) => {
-      console.error(`Error: ${err.message}`);
-      res.status(500).send("从 SupportXMR 获取数据时出错");
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send(`获取数据时出错: ${error.message}`);
-  }
+    } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 Not Found');
+    }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+// 监听 80 端口
+const PORT = 80;
+server.listen(PORT, () => {
+    console.log(`服务器运行在 http://localhost:${PORT}/`);
 });
