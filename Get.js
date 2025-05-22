@@ -44,7 +44,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 // 监听 80 端口
-const PORT = 80;
+const PORT = 8888;
 server.listen(PORT, () => {
     console.log(`服务已运行 http://Get.ookk.us:${PORT}/`);
 });
